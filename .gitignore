@@ -1,0 +1,28 @@
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.png
+*.jpg
+.DS_Store
+
+# Virtual envs
+.venv/
+env/
+venv/
+
+# Data & artifacts
+data/raw/*
+data/interim/*
+data/processed/*
+!data/*/.gitkeep
+models/
+artifacts/
+mlruns/
+
+# Jupyter & reports
+.ipynb_checkpoints/
+monitoring/*.html
