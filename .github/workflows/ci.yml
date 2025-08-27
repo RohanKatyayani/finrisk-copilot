@@ -14,7 +14,7 @@ jobs:
           pip install -r requirements.txt
       - name: Lint & format check
         run: |
-          ruff .
+          ruff check .
           black --check .
       - name: Run tests
         run: pytest -q
