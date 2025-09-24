@@ -65,14 +65,14 @@ def predict(request: PredictionRequest):
 
     try:
         # Convert request to DataFrame
-        data = pd.DataFrame([request.dict()])
+        data = pd.DataFrame([request.model_dump()])
 
         # Predict
         prediction = model.predict(data)[0]
         probabilities = model.predict_proba(data)[0].tolist()
 
         # Log request & result
-        logging.info(f"Input: {request.dict()} | Prediction: {prediction} | Prob: {probabilities}")
+        logging.info(f"Input: {request.model_dump()} | Prediction: {prediction} | Prob: {probabilities}")
 
         return {
             "prediction": int(prediction),
