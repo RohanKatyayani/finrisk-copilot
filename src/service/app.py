@@ -3,6 +3,10 @@ from pydantic import BaseModel, Field
 import joblib
 import pandas as pd
 import logging
+import os
+
+# --- Ensure logs directory exists ---
+os.makedirs("logs", exist_ok=True)
 
 logging.basicConfig(
     filename="logs/app.log",
@@ -13,12 +17,22 @@ logging.basicConfig(
 # Initialize FastAPI
 app = FastAPI(title="Credit Risk API", version="1.0")
 
-# Load model
+# --- Load model ---
+# --- Load model ---
 try:
-    model = joblib.load("models/credit_risk_model.pkl")
+    # Try absolute path inside Docker
+    model_path = os.path.join("/app", "models", "credit_risk_model.pkl")
+
+    if not os.path.exists(model_path):
+        # fallback for local runs
+        model_path = os.path.join(os.path.dirname(__file__), "../../models/credit_risk_model.pkl")
+        model_path = os.path.abspath(model_path)
+
+    model = joblib.load(model_path)
+    print(f"✅ Model loaded from: {model_path}")
     model_loaded = True
 except Exception as e:
-    print("Error loading model:", e)
+    print("❌ Error loading model:", e)
     model = None
     model_loaded = False
 

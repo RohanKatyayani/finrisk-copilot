@@ -32,3 +32,12 @@ pre-commit>=3.7
 # pypdf>=4.2
 # accelerate>=0.33
 # bitsandbytes>=0.43   # Linux + CUDA only, skip on Mac/CPU
+
+fastapi
+uvicorn
+pydantic
+pandas
+scikit-learn
+joblib
+lightgbm
+xgboost
