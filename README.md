@@ -101,11 +101,11 @@ finrisk-copilot/
 
 ## Roadmap (you’ll tick these off)
 
-- [ ] **Milestone 1:** Repo ready, env & CI pass, API health OK
-- [ ] **Milestone 2:** Tabular fraud dataset prepared (train/valid split), baseline LightGBM with PR‑AUC
-- [ ] **Milestone 3:** SHAP explanations + threshold tuning + calibration
-- [ ] **Milestone 4:** Synthetic “reason‑code” dataset generation
-- [ ] **Milestone 5:** LoRA/QLoRA training (GPU/Colab) + eval
+- [x] **Milestone 1:** Repo ready, env & CI pass, API health OK
+- [x] **Milestone 2:** Tabular fraud dataset prepared (train/valid split), baseline LightGBM with PR‑AUC
+- [x] **Milestone 3:** SHAP explanations + threshold tuning + calibration
+- [x] **Milestone 4:** Synthetic “reason‑code” dataset generation
+- [x] **Milestone 5:** LoRA/QLoRA training (GPU/Colab) + eval
 - [ ] **Milestone 6:** RAG over policy PDFs + citations
 - [ ] **Milestone 7:** Unified FastAPI service endpoints
 - [ ] **Milestone 8:** Docker + GitHub Actions CI
