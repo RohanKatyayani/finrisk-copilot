@@ -97,6 +97,27 @@ finrisk-copilot/
    └─ __init__.py
 ```
 
+## 🧠 Fine-Tuning LLM for Credit Risk Explanations
+
+This notebook, `llama_finetune.ipynb`, demonstrates how I fine-tuned **TinyLlama**, a lightweight open LLM, on a dataset of German Credit Risk profiles. The goal is to make the model generate **interpretable explanations** for credit approval or denial decisions.
+
+### ⚙️ What it does
+- Uses **Hugging Face Transformers**, **PEFT**, and **LoRA** for parameter-efficient fine-tuning.
+- Quantized the model to 8-bit using `bitsandbytes` to fit within Colab GPU memory.
+- Fine-tuned on `german_credit_explanations.jsonl`, a dataset containing financial attributes and human-readable risk explanations.
+- The final model (`tinyllama-credit-explainer`) is uploaded to my [Hugging Face Hub](https://huggingface.co/rohankatyayani/tinyllama-credit-explainer).
+
+### 🧩 Tech Stack
+- **Model:** TinyLlama-1.1B
+- **Libraries:** Hugging Face Transformers, Datasets, PEFT (LoRA), BitsAndBytes
+- **Notebook:** Google Colab (with CUDA)
+- **Repo:** [finrisk-copilot](https://github.com/RohanKatyayani/finrisk-copilot)
+- **Goal:** Explain model decisions in financial risk applications — improving transparency and trust in AI-driven lending.
+
+---
+
+💬 *Next step:* Integrate this fine-tuned model into the FinRisk Copilot pipeline for explainable credit assessments.
+
 ---
 
 ## Roadmap (you’ll tick these off)
