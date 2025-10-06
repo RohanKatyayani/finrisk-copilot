@@ -1,5 +1,5 @@
-gradio==4.44.1
-huggingface-hub>=0.23.0
+gradio==4.40.0
+huggingface-hub>=0.23
 fastapi>=0.115
 uvicorn>=0.30
 pydantic>=2.7

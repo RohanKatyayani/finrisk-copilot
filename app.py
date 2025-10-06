@@ -1,41 +1,54 @@
 import gradio as gr
-import pkg_resources
 from huggingface_hub import InferenceClient
+import pkg_resources
 
 print("Gradio version:", pkg_resources.get_distribution("gradio").version)
 
-# Initialize Hugging Face model client
+# Initialize Hugging Face Inference Client
 client = InferenceClient("rohankatyayani/tinyllama-credit-explainer")
 
-def respond(message, system_message):
-    """Handles the chat logic with TinyLlama credit explainer."""
-    prompt = f"{system_message}\n\nApplicant profile: {message}"
-    response = client.text_generation(prompt, max_new_tokens=256, temperature=0.7)
-    return response.strip()
+def explain_credit(profile):
+    """
+    Generate an explanation for the given credit applicant profile.
+    """
+    try:
+        prompt = f"Explain why this applicant with profile: {profile} is labeled as good or bad."
+        response = client.text_generation(
+            prompt,
+            max_new_tokens=200,
+            temperature=0.7,
+            top_p=0.9,
+        )
+        return response
+    except Exception as e:
+        return f"⚠️ Error: {str(e)}"
 
-with gr.Blocks(title="TinyLlama Credit Explainer") as demo:
+# --- Gradio UI ---
+with gr.Blocks(title="TinyLlama Credit Explainer 💳") as demo:
     gr.Markdown(
         """
         # 💳 TinyLlama Credit Explainer
-        Explain **credit risk decisions** made by your fine-tuned TinyLlama model on FICO data.
+        Analyze and explain credit risk labels (good/bad) based on applicant data.
+        Fine-tuned using the TinyLlama model on FICO-style datasets.
         """
     )
 
     with gr.Row():
-        with gr.Column(scale=2):
-            system_message = gr.Textbox(
-                label="System Instruction",
-                value="Explain why a credit applicant is labeled as good or bad based on their financial profile.",
-            )
-            user_input = gr.Textbox(
+        with gr.Column(scale=1):
+            profile_input = gr.Textbox(
                 label="Applicant Profile",
-                placeholder="status=no checking account, duration=36, savings=unknown, employment=1 <= ... < 4 years, amount=9055, age=35",
+                placeholder="Example: status=no checking account, duration=24, savings=unknown, employment=1 <= ... < 4 years, amount=3200, age=29",
+                lines=3,
             )
-            submit = gr.Button("Explain")
+            submit_btn = gr.Button("Explain")
 
-        with gr.Column(scale=3):
-            output = gr.Textbox(label="Model Explanation", lines=6)
+        with gr.Column(scale=1):
+            explanation_output = gr.Textbox(
+                label="Model Explanation",
+                lines=8,
+                interactive=False
+            )
 
-    submit.click(fn=respond, inputs=[user_input, system_message], outputs=output)
+    submit_btn.click(explain_credit, inputs=profile_input, outputs=explanation_output)
 
 demo.launch()
