@@ -1,9 +1,8 @@
-# Core runtime
+gradio==4.44.1
+huggingface-hub>=0.23.0
 fastapi>=0.115
 uvicorn>=0.30
 pydantic>=2.7
-
-# Data/ML core
 numpy>=1.26
 pandas>=2.2
 scikit-learn>=1.5
@@ -12,27 +11,17 @@ xgboost>=2.1
 shap>=0.46
 imbalanced-learn>=0.12
 mlflow>=2.14
-joblib>=1.4   # for saving/loading models
-
-# Monitoring
 evidently>=0.5
-
-# Dev/test/quality
 pytest>=8.2
 black>=24.4
 ruff>=0.5
 pre-commit>=3.7
-
-# RAG/LLM deps
 transformers==4.37.2
 datasets>=2.20
 peft>=0.11
 trl>=0.9
 sentence-transformers>=3.0
-faiss-cpu>=1.8       # On Apple Silicon, prefer conda or use ChromaDB instead
+faiss-cpu>=1.8
 pypdf>=4.2
 accelerate>=0.33
-# bitsandbytes>=0.43   # Uncomment only if deploying on Linux+CUDA, not Mac
-
-# UI for demo
-gradio>=4.41
+python-multipart>=0.0.9
