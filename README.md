@@ -8,6 +8,9 @@ Everything is tracked with MLflow, served via FastAPI, dockerized, and wired wit
 
 ---
 
+> ⚠️ **Status: Active Development** — Core architecture complete, 
+> full deployment in progress as part of MindForge project.
+
 ## Architecture (three components)
 
 - **A) Fraud Detector (Tabular ML)** — LightGBM/XGBoost, class imbalance handling, calibration, SHAP.
