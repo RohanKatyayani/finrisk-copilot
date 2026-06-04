@@ -1,57 +1,78 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+"""
+src/service/app.py
+
+FinRisk Copilot — FastAPI service
+Endpoints:
+  GET  /health          — liveness check
+  POST /predict         — LightGBM credit risk score
+  POST /explain         — TinyLlama plain-English explanation
+  POST /predict_and_explain — combined (score + explanation in one call)
+"""
+
+import os
+import logging
 import joblib
 import pandas as pd
-import logging
-import os
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-# --- Ensure logs directory exists ---
 os.makedirs("logs", exist_ok=True)
-
 logging.basicConfig(
     filename="logs/app.log",
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+from contextlib import asynccontextmanager
+import threading
+
+app = FastAPI(
+    title="FinRisk Copilot",
+    description="Credit risk scoring + plain-English explanations via LoRA-fine-tuned LLM",
+    version="2.0",
 )
 
-# Initialize FastAPI
-app = FastAPI(title="Credit Risk API", version="1.0")
+# ---------------------------------------------------------------------------
+# Load LightGBM pipeline at startup
+# ---------------------------------------------------------------------------
+def _find_model(candidates):
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
 
-# --- Load model ---
-# --- Load model ---
-try:
-    # Try absolute path inside Docker
-    model_path = os.path.join("/app", "models", "credit_risk_model.pkl")
+_model_path = _find_model([
+    "/app/models/credit_risk_model.pkl",                          # Docker
+    os.path.abspath("models/credit_risk_model.pkl"),              # local
+])
 
-    if not os.path.exists(model_path):
-        # fallback for local runs
-        model_path = os.path.join(os.path.dirname(__file__), "../../models/credit_risk_model.pkl")
-        model_path = os.path.abspath(model_path)
-
-    model = joblib.load(model_path)
-    print(f"✅ Model loaded from: {model_path}")
+if _model_path:
+    lgbm_pipeline = joblib.load(_model_path)
     model_loaded = True
-except Exception as e:
-    print("❌ Error loading model:", e)
-    model = None
+    print(f"✅ LightGBM pipeline loaded from: {_model_path}")
+else:
+    lgbm_pipeline = None
     model_loaded = False
+    print("❌ LightGBM model not found — /predict will return 503")
 
-
-# --- Request Schema ---
+# ---------------------------------------------------------------------------
+# Schemas
+# ---------------------------------------------------------------------------
 class PredictionRequest(BaseModel):
-    status: str = Field(..., description="Account status")
-    duration: int = Field(..., gt=0, description="Duration in months (must be >0)")
+    status: str
+    duration: int = Field(..., gt=0)
     credit_history: str
     purpose: str
-    amount: int = Field(..., gt=0, description="Credit amount")
+    amount: int = Field(..., gt=0)
     savings: str
     employment_duration: str
-    installment_rate: int = Field(..., ge=1, le=4, description="Installment rate (1-4)")
+    installment_rate: int = Field(..., ge=1, le=4)
     personal_status_sex: str
     other_debtors: str
     present_residence: int
     property: str
-    age: int = Field(..., ge=18, description="Age must be >= 18")
+    age: int = Field(..., ge=18)
     other_installment_plans: str
     housing: str
     number_credits: int
@@ -61,38 +82,76 @@ class PredictionRequest(BaseModel):
     foreign_worker: str
 
 
-# --- Endpoints ---
-@app.get("/")
-def root():
-    return {"message": "Credit Risk API is running 🚀"}
+class ExplainRequest(BaseModel):
+    features: dict = Field(..., description="Same keys as /predict body")
+    prediction: int = Field(..., ge=0, le=1, description="0=good, 1=bad credit")
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def _run_lgbm(req: PredictionRequest):
+    if not model_loaded:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    try:
+        df = pd.DataFrame([req.model_dump()])
+        pred = int(lgbm_pipeline.predict(df)[0])
+        proba = lgbm_pipeline.predict_proba(df)[0].tolist()
+        return pred, proba
+    except Exception as e:
+        logger.error(f"Prediction error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 @app.get("/health")
 def health():
     return {"status": "ok", "model_loaded": model_loaded}
 
 
 @app.post("/predict")
-def predict(request: PredictionRequest):
-    if not model_loaded:
-        raise HTTPException(status_code=500, detail="Model not loaded")
+def predict(req: PredictionRequest):
+    pred, proba = _run_lgbm(req)
+    logger.info(f"predict | pred={pred} proba={proba}")
+    return {"prediction": pred, "probabilities": proba}
 
+
+@app.post("/explain")
+def explain(req: ExplainRequest):
+    """
+    Generate a plain-English explanation for a credit decision.
+    Pass the same feature dict you'd send to /predict, plus the prediction (0 or 1).
+    Note: First call downloads/loads the model (~30s). Subsequent calls are faster.
+    """
     try:
-        # Convert request to DataFrame
-        data = pd.DataFrame([request.model_dump()])
-
-        # Predict
-        prediction = model.predict(data)[0]
-        probabilities = model.predict_proba(data)[0].tolist()
-
-        # Log request & result
-        logging.info(f"Input: {request.model_dump()} | Prediction: {prediction} | Prob: {probabilities}")
-
-        return {
-            "prediction": int(prediction),
-            "probabilities": probabilities
-        }
-
+        from src.models.lora_infer import generate_explanation
+        explanation = generate_explanation(req.features, req.prediction)
+        logger.info(f"explain | pred={req.prediction} | explanation={explanation[:80]}")
+        return {"explanation": explanation, "prediction": req.prediction}
     except Exception as e:
-        logging.error(f"Prediction failed: {e}")
+        logger.error(f"Explain error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/predict_and_explain")
+def predict_and_explain(req: PredictionRequest):
+    """
+    Convenience endpoint: run LightGBM prediction then generate explanation.
+    Returns score + probabilities + plain-English reasoning in one call.
+    """
+    pred, proba = _run_lgbm(req)
+    try:
+        from src.models.lora_infer import generate_explanation
+        explanation = generate_explanation(req.model_dump(), pred)
+    except Exception as e:
+        logger.warning(f"Explanation failed, returning score only: {e}")
+        explanation = "Explanation unavailable."
+
+    logger.info(f"predict_and_explain | pred={pred} | explanation={explanation[:80]}")
+    return {
+        "prediction": pred,
+        "probabilities": proba,
+        "explanation": explanation,
+    }
