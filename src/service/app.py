@@ -24,9 +24,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from contextlib import asynccontextmanager
-import threading
-
 app = FastAPI(
     title="FinRisk Copilot",
     description="Credit risk scoring + plain-English explanations via LoRA-fine-tuned LLM",
