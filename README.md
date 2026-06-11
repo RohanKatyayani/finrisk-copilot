@@ -1,150 +1,164 @@
-# FinRisk Copilot — End‑to‑End Banking AI (LoRA/PEFT + RAG + MLOps)
+# FinRisk Copilot
 
-**Elevator pitch:** A production‑style system that detects suspicious transactions (tabular ML),
-generates bank‑tone explanations using a **LoRA‑fine‑tuned** LLM, and answers policy questions via **RAG**.
-Everything is tracked with MLflow, served via FastAPI, dockerized, and wired with CI + monitoring.
+A production-style banking AI system that combines tabular ML, a LoRA-fine-tuned LLM, and retrieval-augmented generation behind a single FastAPI service.
 
-> Designed to show **senior‑level ownership** across DS, LLMs (PEFT), and MLOps for a bank context.
+[![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.136-009688)](https://fastapi.tiangolo.com/)
+[![MLflow](https://img.shields.io/badge/MLflow-tracking-0194E2)](https://mlflow.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-> ⚠️ **Status: Active Development** — Core architecture complete, 
-> full deployment in progress as part of MindForge project.
+## What it does
 
-## Architecture (three components)
+FinRisk Copilot scores credit-risk applications and explains its decisions in plain English. It's structured around three complementary components:
 
-- **A) Fraud Detector (Tabular ML)** — LightGBM/XGBoost, class imbalance handling, calibration, SHAP.
-- **B) Reason‑Code Explainer (LLM + LoRA/QLoRA)** — PEFT adapters to write short regulator‑style narratives.
-- **C) Policy/Risk Assistant (RAG)** — PDF ingestion → embeddings → vector index → grounded answers with citations.
+- **Risk Scorer** — A LightGBM classifier trained on the German Credit dataset. Handles class imbalance, logs experiments to MLflow, returns calibrated probabilities.
+- **LLM Explainer** — TinyLlama-1.1B fine-tuned with LoRA on synthetic bank-tone explanations. Generates regulator-style reasoning for each decision. Hosted on [Hugging Face Hub](https://huggingface.co/rohankatyayani/tinyllama-credit-explainer) and demoable live on [Hugging Face Spaces](https://huggingface.co/spaces/rohankatyayani/tinyllama-credit-explainer).
+- **Policy Assistant (RAG)** — *Coming in next milestone.* Retrieves from public banking policy PDFs and answers questions with citations.
 
-Glue: MLflow tracking/registry, FastAPI service, Docker, GitHub Actions, Evidently monitoring.
+All three are served behind one FastAPI app with a small set of clean endpoints.
+
+---
+
+## Quickstart
+
+Requires Python 3.11. The first `/explain` call downloads ~4GB of model weights from Hugging Face Hub and caches them locally.
+
+```bash
+# 1. Clone and set up
+git clone https://github.com/RohanKatyayani/finrisk-copilot.git
+cd finrisk-copilot
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# 2. Train the LightGBM model (logs to MLflow, saves models/credit_risk_model.pkl)
+python src/training/train_model.py
+
+# 3. Start the API
+uvicorn src.service.app:app --port 8000
+```
+
+### API Endpoints
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/health` | GET | Liveness check |
+| `/predict` | POST | Credit risk score from LightGBM |
+| `/explain` | POST | Plain-English explanation from fine-tuned TinyLlama |
+| `/predict_and_explain` | POST | Score + explanation in one call |
+
+**Try `/predict_and_explain`:**
+
+```bash
+curl -X POST http://localhost:8000/predict_and_explain \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status":"A11","duration":24,"credit_history":"A34","purpose":"A43",
+    "amount":3500,"savings":"A61","employment_duration":"A73",
+    "installment_rate":2,"personal_status_sex":"A93","other_debtors":"A101",
+    "present_residence":2,"property":"A121","age":30,
+    "other_installment_plans":"A143","housing":"A152","number_credits":1,
+    "job":"A173","people_liable":1,"telephone":"A192","foreign_worker":"A201"
+  }'
+```
+
+Sample response:
+```json
+{
+  "prediction": 1,
+  "probabilities": [0.163, 0.837],
+  "explanation": "The applicant has a history of late payments and high-interest loans..."
+}
+```
+
+---
+
+## Architecture
 
 ```
-Data → Features → Train (tabular) → PR‑AUC/Threshold → SHAP
-           ↘ signals → LoRA (LLM) → case narration
-Docs/PDFs → chunk/embed → vector store → RAG answers
-All artifacts tracked in MLflow → served via FastAPI → monitored
+┌─────────────────────────────────────────────────────────────┐
+│                    FastAPI Service                          │
+│                                                             │
+│  POST /predict              → LightGBM (German Credit)      │
+│  POST /explain              → TinyLlama (LoRA fine-tuned)   │
+│  POST /predict_and_explain  → Both, combined                │
+│  POST /ask_policy           → RAG over policy PDFs (WIP)    │
+└─────────────────────────────────────────────────────────────┘
+         │                  │                    │
+         ▼                  ▼                    ▼
+  ┌──────────┐       ┌─────────────┐      ┌──────────┐
+  │ LightGBM │       │  TinyLlama  │      │   FAISS  │
+  │ pipeline │       │   + LoRA    │      │  + PDFs  │
+  └──────────┘       └─────────────┘      └──────────┘
+       │                    │                    │
+       ▼                    ▼                    ▼
+   ┌────────────────────────────────────────────────┐
+   │              MLflow tracking                   │
+   └────────────────────────────────────────────────┘
 ```
 
----
-
-## Quickstart (Milestone 1 — Repo & Environment)
-
-> **Python version:** 3.11 recommended (widest library compatibility).
-
-1. **Create virtual environment**
-   ```bash
-   python3.11 -m venv .venv           # ensure Python 3.11 installed
-   source .venv/bin/activate          # Windows: .venv\Scripts\activate
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-2. **Run the API locally (smoke test)**
-   ```bash
-   uvicorn src.service.app:app --reload --port 8000
-   # open http://127.0.0.1:8000/health → {"status":"ok"}
-   ```
-
-3. **Run tests**
-   ```bash
-   pytest -q
-   ```
-
-4. **Pre‑commit hooks (format & lint on commit)**
-   ```bash
-   pre-commit install
-   ```
-
-5. **Git & GitHub (first push)**
-   ```bash
-   git init
-   git branch -M main
-   git add .
-   git commit -m "init: scaffold repo, README, CI, FastAPI smoke test"
-   git remote add origin <YOUR_GITHUB_REPO_URL>
-   git push -u origin main
-   ```
-
-> **Mac with Apple Silicon (M‑series):** Some packages (e.g., FAISS, bitsandbytes) are optional and platform‑specific. 
-> Start with the current `requirements.txt`. We’ll add GPU‑only extras later from a Linux/CUDA machine or Colab.
+A note on serving the LLM: PyTorch deadlocks when loaded inside a forked uvicorn worker on macOS. `src/models/lora_infer.py` works around this by running each inference in a fresh Python subprocess. In production this would be a separate microservice.
 
 ---
 
-## Project Structure
+## Tech stack
+
+- **ML:** scikit-learn, LightGBM, SHAP, imbalanced-learn
+- **LLM:** Hugging Face Transformers, PEFT (LoRA), TinyLlama-1.1B
+- **Serving:** FastAPI, uvicorn, pydantic
+- **MLOps:** MLflow (tracking + registry), Evidently (monitoring), Docker, GitHub Actions
+- **RAG:** sentence-transformers, FAISS
+
+---
+
+## Project structure
 
 ```
 finrisk-copilot/
-├─ README.md
-├─ requirements.txt
-├─ .pre-commit-config.yaml
-├─ .gitignore
-├─ LICENSE
-├─ .github/workflows/ci.yml
-├─ docker/Dockerfile
-├─ src/
-│  ├─ service/app.py            # FastAPI health check + placeholder endpoints
-│  ├─ __init__.py
-│  ├─ config/__init__.py
-│  ├─ data/__init__.py
-│  ├─ models/__init__.py
-│  ├─ rag/__init__.py
-│  ├─ utils/__init__.py
-├─ data/                        # (ignored) raw/interim/processed go here
-│  ├─ .gitignore
-│  ├─ raw/.gitkeep
-│  ├─ interim/.gitkeep
-│  └─ processed/.gitkeep
-└─ tests/
-   ├─ test_api.py
-   └─ __init__.py
+├── src/
+│   ├── service/app.py          # FastAPI app + endpoints
+│   ├── models/lora_infer.py    # Subprocess-isolated LLM inference
+│   ├── training/
+│   │   ├── train_model.py      # LightGBM training + MLflow logging
+│   │   └── make_explanations.py# Synthetic explanation dataset generator
+│   └── rag/                    # RAG pipeline (in progress)
+├── notebooks/
+│   ├── 01_preprocessing.ipynb
+│   ├── 02_feature_engineering.ipynb
+│   ├── 03_generate_explanations.ipynb
+│   └── llama_finetune.ipynb    # LoRA fine-tuning on Colab
+├── data/                       # German Credit dataset
+├── tests/                      # pytest test suite
+├── docker/Dockerfile           # Container image
+├── scripts/                    # Data prep utilities
+└── requirements.txt
 ```
 
-## 🧠 Fine-Tuning LLM for Credit Risk Explanations
+---
 
-This notebook, `llama_finetune.ipynb`, demonstrates how I fine-tuned **TinyLlama**, a lightweight open LLM, on a dataset of German Credit Risk profiles. The goal is to make the model generate **interpretable explanations** for credit approval or denial decisions.
+## Status
 
-### ⚙️ What it does
-- Uses **Hugging Face Transformers**, **PEFT**, and **LoRA** for parameter-efficient fine-tuning.
-- Quantized the model to 8-bit using `bitsandbytes` to fit within Colab GPU memory.
-- Fine-tuned on `german_credit_explanations.jsonl`, a dataset containing financial attributes and human-readable risk explanations.
-- The final model (`tinyllama-credit-explainer`) is uploaded to my [Hugging Face Hub](https://huggingface.co/rohankatyayani/tinyllama-credit-explainer).
-
-### 🧩 Tech Stack
-- **Model:** TinyLlama-1.1B
-- **Libraries:** Hugging Face Transformers, Datasets, PEFT (LoRA), BitsAndBytes
-- **Notebook:** Google Colab (with CUDA)
-- **Repo:** [finrisk-copilot](https://github.com/RohanKatyayani/finrisk-copilot)
-- **Goal:** Explain model decisions in financial risk applications — improving transparency and trust in AI-driven lending.
+- [x] Risk scoring pipeline (LightGBM + MLflow)
+- [x] Synthetic explanation dataset generation
+- [x] LoRA fine-tuning of TinyLlama (Colab + Hugging Face Hub)
+- [x] LLM-backed explanation endpoint
+- [ ] RAG over banking policy PDFs
+- [ ] Evidently drift monitoring
+- [ ] Dockerized deployment + GitHub Actions CI
+- [ ] Model and data cards
 
 ---
 
-💬 *Next step:* Integrate this fine-tuned model into the FinRisk Copilot pipeline for explainable credit assessments.
+## Links
 
----
-
-## Roadmap (you’ll tick these off)
-
-- [x] **Milestone 1:** Repo ready, env & CI pass, API health OK
-- [x] **Milestone 2:** Tabular fraud dataset prepared (train/valid split), baseline LightGBM with PR‑AUC
-- [x] **Milestone 3:** SHAP explanations + threshold tuning + calibration
-- [x] **Milestone 4:** Synthetic “reason‑code” dataset generation
-- [x] **Milestone 5:** LoRA/QLoRA training (GPU/Colab) + eval
-- [ ] **Milestone 6:** RAG over policy PDFs + citations
-- [ ] **Milestone 7:** Unified FastAPI service endpoints
-- [ ] **Milestone 8:** Docker + GitHub Actions CI
-- [ ] **Milestone 9:** Monitoring (Evidently) + model/data cards
-- [ ] **Milestone 10:** Demo script + interview notes
-
----
-
-## Interview soundbite for this milestone
-
-> “I started by pinning Python 3.11, setting up a clean repo with pre‑commit (black/ruff), CI on PRs, and a FastAPI health endpoint. 
-> This gives me reproducibility and guardrails before I add heavy ML/LLM pieces.”
+- **Live demo:** [TinyLlama Credit Explainer on Hugging Face Spaces](https://huggingface.co/spaces/rohankatyayani/tinyllama-credit-explainer)
+- **Fine-tuned model:** [rohankatyayani/tinyllama-credit-explainer](https://huggingface.co/rohankatyayani/tinyllama-credit-explainer)
+- **Training notebook:** [`notebooks/llama_finetune.ipynb`](notebooks/llama_finetune.ipynb)
 
 ---
 
 ## License
 
-MIT © 2025 Rohan Katyayani
+MIT © Rohan Katyayani
