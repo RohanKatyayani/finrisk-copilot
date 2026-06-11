@@ -26,3 +26,5 @@ mlruns/
 # Jupyter & reports
 .ipynb_checkpoints/
 monitoring/*.html
+.pytest_cache/
+logs/
