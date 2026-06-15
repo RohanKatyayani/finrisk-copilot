@@ -3,10 +3,11 @@ src/service/app.py
 
 FinRisk Copilot — FastAPI service
 Endpoints:
-  GET  /health          — liveness check
-  POST /predict         — LightGBM credit risk score
-  POST /explain         — TinyLlama plain-English explanation
+  GET  /health              — liveness check
+  POST /predict             — LightGBM credit risk score
+  POST /explain             — TinyLlama plain-English explanation
   POST /predict_and_explain — combined (score + explanation in one call)
+  POST /ask_policy          — RAG over banking policy PDFs (Groq Llama 3.1)
 """
 
 import os
@@ -26,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="FinRisk Copilot",
-    description="Credit risk scoring + plain-English explanations via LoRA-fine-tuned LLM",
-    version="2.0",
+    description="Credit risk scoring + plain-English explanations + policy QA via RAG",
+    version="3.0",
 )
 
 # ---------------------------------------------------------------------------
@@ -82,6 +83,11 @@ class PredictionRequest(BaseModel):
 class ExplainRequest(BaseModel):
     features: dict = Field(..., description="Same keys as /predict body")
     prediction: int = Field(..., ge=0, le=1, description="0=good, 1=bad credit")
+
+
+class AskPolicyRequest(BaseModel):
+    question: str = Field(..., min_length=3, description="Question about banking policy")
+    k: int = Field(4, ge=1, le=10, description="Number of chunks to retrieve")
 
 
 # ---------------------------------------------------------------------------
@@ -152,3 +158,23 @@ def predict_and_explain(req: PredictionRequest):
         "probabilities": proba,
         "explanation": explanation,
     }
+
+
+@app.post("/ask_policy")
+def ask_policy(req: AskPolicyRequest):
+    """
+    Answer banking policy questions using retrieval-augmented generation
+    over Basel + FATF source documents. Returns a grounded answer with
+    inline citations [1], [2]... and a separate sources array.
+    """
+    try:
+        from src.rag.qa import answer_question
+        result = answer_question(req.question, k=req.k)
+        logger.info(f"ask_policy | q={req.question[:60]!r} | n_sources={len(result['sources'])}")
+        return result
+    except FileNotFoundError as e:
+        logger.error(f"RAG index missing: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.error(f"ask_policy error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
