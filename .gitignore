@@ -28,3 +28,4 @@ mlruns/
 monitoring/*.html
 .pytest_cache/
 logs/
+.env
