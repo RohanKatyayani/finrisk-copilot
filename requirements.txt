@@ -24,4 +24,6 @@ sentence-transformers>=3.0
 faiss-cpu>=1.8
 pypdf>=4.2
 accelerate>=0.33
-python-multipart>=0.0.9
+python-multipart>=0.0.9 #RAG: Groq LLM API + env file loader
+groq>=0.4.0
+python-dotenv>=1.0.0
