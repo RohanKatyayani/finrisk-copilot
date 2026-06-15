@@ -1,2 +1,7 @@
+# Ignore all subdirectories by default (raw, interim, processed contain large data)
 */
+
+# But keep the RAG corpus tracked — small PDFs + index, useful for clone-and-run demos
+!rag/
+!rag/**
 !.gitkeep
