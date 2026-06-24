@@ -33,26 +33,54 @@ app = FastAPI(
 
 # ---------------------------------------------------------------------------
 # Load LightGBM pipeline at startup
+# Strategy: try MLflow Model Registry (Production stage) first,
+# fall back to local pickle. This means production deploys can promote
+# new model versions without code changes, while still working in Docker
+# or CI environments where the registry isn't available.
 # ---------------------------------------------------------------------------
-def _find_model(candidates):
-    for p in candidates:
+MLFLOW_URI         = "sqlite:///mlflow.db"
+REGISTERED_NAME    = "credit_risk_model"
+LOAD_STAGE         = "Production"
+LOCAL_PKL_CANDIDATES = [
+    "/app/models/credit_risk_model.pkl",            # Docker
+    os.path.abspath("models/credit_risk_model.pkl"),  # local
+]
+
+
+def _load_from_registry():
+    """Try MLflow Model Registry first. Returns (pipeline, source_str) or (None, None)."""
+    if not os.path.exists("mlflow.db"):
+        return None, None
+    try:
+        import mlflow
+        mlflow.set_tracking_uri(MLFLOW_URI)
+        uri = f"models:/{REGISTERED_NAME}/{LOAD_STAGE}"
+        pipeline = mlflow.sklearn.load_model(uri)
+        return pipeline, uri
+    except Exception as e:
+        logger.warning(f"Registry load failed ({e}); falling back to local pickle.")
+        return None, None
+
+
+def _load_from_pickle():
+    """Fallback: load from a local .pkl file."""
+    for p in LOCAL_PKL_CANDIDATES:
         if os.path.exists(p):
-            return p
-    return None
+            return joblib.load(p), p
+    return None, None
 
-_model_path = _find_model([
-    "/app/models/credit_risk_model.pkl",                          # Docker
-    os.path.abspath("models/credit_risk_model.pkl"),              # local
-])
 
-if _model_path:
-    lgbm_pipeline = joblib.load(_model_path)
+# Try registry first, then pickle
+lgbm_pipeline, _model_source = _load_from_registry()
+if lgbm_pipeline is None:
+    lgbm_pipeline, _model_source = _load_from_pickle()
+
+if lgbm_pipeline is not None:
     model_loaded = True
-    print(f"✅ LightGBM pipeline loaded from: {_model_path}")
+    print(f"✅ LightGBM pipeline loaded from: {_model_source}")
 else:
-    lgbm_pipeline = None
     model_loaded = False
-    print("❌ LightGBM model not found — /predict will return 503")
+    print("❌ LightGBM model not found in registry or pickle — /predict will return 503")
 
 # ---------------------------------------------------------------------------
 # Schemas
