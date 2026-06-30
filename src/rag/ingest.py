@@ -11,26 +11,24 @@ Run once after adding new PDFs:
 """
 
 import json
-import os
 from pathlib import Path
 
 import faiss
-import numpy as np
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-PDF_DIR        = Path("data/rag/source_pdfs")
-INDEX_DIR      = Path("data/rag/index")
-INDEX_PATH     = INDEX_DIR / "index.faiss"
-CHUNKS_PATH    = INDEX_DIR / "chunks.json"
+PDF_DIR = Path("data/rag/source_pdfs")
+INDEX_DIR = Path("data/rag/index")
+INDEX_PATH = INDEX_DIR / "index.faiss"
+CHUNKS_PATH = INDEX_DIR / "chunks.json"
 
 EMBED_MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
-CHUNK_SIZE     = 800     # characters
-CHUNK_OVERLAP  = 100     # characters
-BATCH_SIZE     = 32
+CHUNK_SIZE = 800  # characters
+CHUNK_OVERLAP = 100  # characters
+BATCH_SIZE = 32
 
 
 # ---------------------------------------------------------------------------
@@ -84,11 +82,13 @@ def build_index():
         text = extract_text(pdf_path)
         chunks = chunk_text(text)
         for i, chunk in enumerate(chunks):
-            all_chunks.append({
-                "id": f"{pdf_path.stem}__chunk{i:04d}",
-                "source": pdf_path.name,
-                "text": chunk,
-            })
+            all_chunks.append(
+                {
+                    "id": f"{pdf_path.stem}__chunk{i:04d}",
+                    "source": pdf_path.name,
+                    "text": chunk,
+                }
+            )
         print(f"    -> {len(chunks)} chunks from {len(text):,} chars")
 
     print(f"\nTotal chunks: {len(all_chunks)}")
@@ -104,7 +104,7 @@ def build_index():
         batch_size=BATCH_SIZE,
         show_progress_bar=True,
         convert_to_numpy=True,
-        normalize_embeddings=True,   # so inner product == cosine similarity
+        normalize_embeddings=True,  # so inner product == cosine similarity
     ).astype("float32")
     print(f"Embeddings shape: {vectors.shape}")
 

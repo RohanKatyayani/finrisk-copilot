@@ -60,22 +60,24 @@ def _load_components():
 
 def retrieve(question: str, k: int = DEFAULT_K) -> list[dict]:
     embedder, index, chunks, _ = _load_components()
-    qvec = embedder.encode(
-        [question], convert_to_numpy=True, normalize_embeddings=True
-    ).astype("float32")
+    qvec = embedder.encode([question], convert_to_numpy=True, normalize_embeddings=True).astype(
+        "float32"
+    )
     scores, idxs = index.search(qvec, k)
     results = []
     for rank, (score, idx) in enumerate(zip(scores[0], idxs[0]), start=1):
         if idx == -1:
             continue
         c = chunks[idx]
-        results.append({
-            "rank": rank,
-            "score": float(score),
-            "source": c["source"],
-            "chunk_id": c["id"],
-            "text": c["text"],
-        })
+        results.append(
+            {
+                "rank": rank,
+                "score": float(score),
+                "source": c["source"],
+                "chunk_id": c["id"],
+                "text": c["text"],
+            }
+        )
     return results
 
 
@@ -125,6 +127,7 @@ def answer_question(question: str, k: int = DEFAULT_K) -> dict:
 
 if __name__ == "__main__":
     import sys
+
     q = " ".join(sys.argv[1:]) or "What is the three lines of defence in AML risk management?"
     print(f"\nQuestion: {q}\n")
     result = answer_question(q)

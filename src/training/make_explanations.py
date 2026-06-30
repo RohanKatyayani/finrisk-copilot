@@ -1,8 +1,10 @@
-import pandas as pd
 import json
+
+import pandas as pd
 
 # Load the cleaned German dataset
 df = pd.read_csv("data/interim/german_credit.csv")
+
 
 # Function to generate a simple rule-based explanation
 def generate_explanation(row):
@@ -20,9 +22,12 @@ def generate_explanation(row):
         reasons.append("stable financial profile")
 
     label = "bad" if row["credit_risk"] == 1 else "good"
-    explanation = f"Application {'denied' if label=='bad' else 'approved'} due to " + ", ".join(reasons) + "."
+    explanation = (
+        f"Application {'denied' if label=='bad' else 'approved'} due to " + ", ".join(reasons) + "."
+    )
 
     return label, explanation
+
 
 # Generate JSONL
 with open("data/explanations/german_credit_explanations.jsonl", "w") as f:
@@ -31,7 +36,7 @@ with open("data/explanations/german_credit_explanations.jsonl", "w") as f:
         record = {
             "input": f"status={row['status']}, duration={row['duration']}, savings={row['savings']}, employment={row['employment_duration']}, amount={row['amount']}, age={row['age']}",
             "label": label,
-            "explanation": explanation
+            "explanation": explanation,
         }
         f.write(json.dumps(record) + "\n")
 

@@ -10,18 +10,18 @@ Usage:
 """
 
 import os
+
 import joblib
 import mlflow
 import mlflow.sklearn
-import pandas as pd
 import numpy as np
-
-from sklearn.model_selection import train_test_split
+import pandas as pd
+from lightgbm import LGBMClassifier
 from sklearn.compose import ColumnTransformer
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.metrics import accuracy_score, classification_report
-from lightgbm import LGBMClassifier
 
 RANDOM_STATE = 42
 
@@ -52,7 +52,7 @@ def load_data(path="data/interim/german_credit.csv", target_candidates=None):
 def build_preprocessor(X):
     """OneHotEncoder for categoricals + StandardScaler for numerics."""
     categorical_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
-    numeric_cols     = X.select_dtypes(include=[np.number]).columns.tolist()
+    numeric_cols = X.select_dtypes(include=[np.number]).columns.tolist()
 
     preprocessor = ColumnTransformer(
         transformers=[
@@ -108,11 +108,11 @@ def main():
         for cls in ("0", "1"):
             if cls in report:
                 mlflow.log_metric(f"precision_class_{cls}", float(report[cls]["precision"]))
-                mlflow.log_metric(f"recall_class_{cls}",    float(report[cls]["recall"]))
-                mlflow.log_metric(f"f1_class_{cls}",        float(report[cls]["f1-score"]))
+                mlflow.log_metric(f"recall_class_{cls}", float(report[cls]["recall"]))
+                mlflow.log_metric(f"f1_class_{cls}", float(report[cls]["f1-score"]))
 
         # Log + register the model in one call
-        result = mlflow.sklearn.log_model(
+        mlflow.sklearn.log_model(
             sk_model=pipeline,
             artifact_path="model_pipeline",
             registered_model_name=REGISTERED_MODEL_NAME,
@@ -126,8 +126,8 @@ def main():
         print(f"\n📊 Metrics — accuracy: {acc:.3f}")
         print(f"📌 MLflow run ID: {run_id}")
         print(f"🏷️  Registered model: {REGISTERED_MODEL_NAME} (check Registry for version)")
-        print(f"💾 Local pickle:  models/credit_risk_model.pkl")
-        print(f"\n✅ Training complete.")
+        print("💾 Local pickle:  models/credit_risk_model.pkl")
+        print("\n✅ Training complete.")
 
 
 if __name__ == "__main__":

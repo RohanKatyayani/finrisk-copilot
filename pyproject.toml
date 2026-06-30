@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------------------
+# Project tooling configuration for FinRisk Copilot
+# Read by ruff, black, and pytest — single source of truth for style.
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+# Python target (must match runtime).
+target-version = "py311"
+# 100 characters fits modern wide monitors and matches black's default 88+breathing room.
+line-length = 100
+
+# What to lint: production code. Skip notebooks (exploratory) and build/cache dirs.
+extend-exclude = [
+    "notebooks",
+    ".venv",
+    "build",
+    "dist",
+    "data",
+    "models",
+    "mlruns",
+    "artifacts",
+    "monitoring/drift_report.html",
+]
+
+[tool.ruff.lint]
+# Default rules + import sorting. F=pyflakes (logic bugs), E=pycodestyle (style),
+# I=isort (import ordering). Skip W (warnings) for now to keep CI signal high.
+select = ["F", "E", "I"]
+
+# Project-specific allowances.
+ignore = [
+    "E501",  # line too long — we have a few documented prompts that exceed 100 chars by design
+]
+
+[tool.ruff.lint.per-file-ignores]
+# __init__.py files are allowed to have "unused" imports (they're re-exports).
+"__init__.py" = ["F401"]
+# Tests can have redefined fixtures, unused imports for parametrize, etc.
+"tests/*" = ["F401", "F811"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+# Don't touch notebooks (we'd need black[jupyter] anyway, and we keep notebooks as-is).
+extend-exclude = "notebooks|\\.venv|data|models|mlruns"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"

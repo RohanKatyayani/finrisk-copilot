@@ -10,8 +10,9 @@ Endpoints:
   POST /ask_policy          — RAG over banking policy PDFs (Groq Llama 3.1)
 """
 
-import os
 import logging
+import os
+
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
@@ -38,11 +39,11 @@ app = FastAPI(
 # new model versions without code changes, while still working in Docker
 # or CI environments where the registry isn't available.
 # ---------------------------------------------------------------------------
-MLFLOW_URI         = "sqlite:///mlflow.db"
-REGISTERED_NAME    = "credit_risk_model"
-LOAD_STAGE         = "Production"
+MLFLOW_URI = "sqlite:///mlflow.db"
+REGISTERED_NAME = "credit_risk_model"
+LOAD_STAGE = "Production"
 LOCAL_PKL_CANDIDATES = [
-    "/app/models/credit_risk_model.pkl",            # Docker
+    "/app/models/credit_risk_model.pkl",  # Docker
     os.path.abspath("models/credit_risk_model.pkl"),  # local
 ]
 
@@ -53,6 +54,7 @@ def _load_from_registry():
         return None, None
     try:
         import mlflow
+
         mlflow.set_tracking_uri(MLFLOW_URI)
         uri = f"models:/{REGISTERED_NAME}/{LOAD_STAGE}"
         pipeline = mlflow.sklearn.load_model(uri)
@@ -81,6 +83,7 @@ if lgbm_pipeline is not None:
 else:
     model_loaded = False
     print("❌ LightGBM model not found in registry or pickle — /predict will return 503")
+
 
 # ---------------------------------------------------------------------------
 # Schemas
@@ -158,6 +161,7 @@ def explain(req: ExplainRequest):
     """
     try:
         from src.models.lora_infer import generate_explanation
+
         explanation = generate_explanation(req.features, req.prediction)
         logger.info(f"explain | pred={req.prediction} | explanation={explanation[:80]}")
         return {"explanation": explanation, "prediction": req.prediction}
@@ -175,6 +179,7 @@ def predict_and_explain(req: PredictionRequest):
     pred, proba = _run_lgbm(req)
     try:
         from src.models.lora_infer import generate_explanation
+
         explanation = generate_explanation(req.model_dump(), pred)
     except Exception as e:
         logger.warning(f"Explanation failed, returning score only: {e}")
@@ -197,6 +202,7 @@ def ask_policy(req: AskPolicyRequest):
     """
     try:
         from src.rag.qa import answer_question
+
         result = answer_question(req.question, k=req.k)
         logger.info(f"ask_policy | q={req.question[:60]!r} | n_sources={len(result['sources'])}")
         return result

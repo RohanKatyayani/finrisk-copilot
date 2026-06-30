@@ -19,7 +19,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from evidently import Report
 from evidently.presets import DataDriftPreset
 
@@ -28,16 +27,17 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-DATA_PATH   = Path("data/interim/german_credit.csv")
+DATA_PATH = Path("data/interim/german_credit.csv")
 REPORT_PATH = Path("monitoring/drift_report.html")
 
 # Drift simulation knobs
-RANDOM_SEED         = 42
-CURRENT_SAMPLE_SIZE = 500          # larger sample reduces categorical noise
-AMOUNT_SHIFT_PCT    = 1.50         # 150% upward shift on loan amounts (severe)
-DURATION_SHIFT_MO   = 18           # +18 months on loan durations (severe)
-AGE_NOISE_SD        = 8.0          # heavier age noise
-PURPOSE_DRIFT_PROB  = 0.60         # 60% chance to flip purpose
+RANDOM_SEED = 42
+CURRENT_SAMPLE_SIZE = 500  # larger sample reduces categorical noise
+AMOUNT_SHIFT_PCT = 1.50  # 150% upward shift on loan amounts (severe)
+DURATION_SHIFT_MO = 18  # +18 months on loan durations (severe)
+AGE_NOISE_SD = 8.0  # heavier age noise
+PURPOSE_DRIFT_PROB = 0.60  # 60% chance to flip purpose
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -70,7 +70,9 @@ def simulate_current(reference: pd.DataFrame) -> pd.DataFrame:
 
     # 3. Age noisier (e.g., wider customer demographic)
     if "age" in cur.columns:
-        cur["age"] = (cur["age"] + rng.normal(0, AGE_NOISE_SD, size=len(cur))).clip(18, 90).astype(int)
+        cur["age"] = (
+            (cur["age"] + rng.normal(0, AGE_NOISE_SD, size=len(cur))).clip(18, 90).astype(int)
+        )
 
     # 4. Purpose category drift (some applicants now have shifted preferences)
     if "purpose" in cur.columns:
@@ -94,10 +96,12 @@ def run():
     print("Simulating current production data with controlled drift...")
     current = simulate_current(reference)
     print(f"  Current shape:   {current.shape}")
-    print(f"  Drift applied:   +{int(AMOUNT_SHIFT_PCT*100)}% amount, "
-          f"+{DURATION_SHIFT_MO}mo duration, "
-          f"~N(0,{AGE_NOISE_SD}) on age, "
-          f"{int(PURPOSE_DRIFT_PROB*100)}% purpose flip")
+    print(
+        f"  Drift applied:   +{int(AMOUNT_SHIFT_PCT*100)}% amount, "
+        f"+{DURATION_SHIFT_MO}mo duration, "
+        f"~N(0,{AGE_NOISE_SD}) on age, "
+        f"{int(PURPOSE_DRIFT_PROB*100)}% purpose flip"
+    )
 
     print("\nRunning Evidently DataDriftPreset...")
     report = Report(metrics=[DataDriftPreset()])

@@ -1,6 +1,3 @@
-from fastapi.testclient import TestClient
-from src.service.app import app
-
 # client = TestClient(app)
 #
 #
@@ -8,11 +5,10 @@ from src.service.app import app
 #     r = client.get("/health")
 #     assert r.status_code == 200
 #     assert r.json().get("status") == "ok"
-
 # tests/test_api.py
-
 import pytest
 from fastapi.testclient import TestClient
+
 from src.service.app import app
 
 client = TestClient(app)
@@ -50,7 +46,7 @@ def test_predict():
         "job": "A173",
         "people_liable": 1,
         "telephone": "A192",
-        "foreign_worker": "A201"
+        "foreign_worker": "A201",
     }
 
     response = client.post("/predict", json=sample_request)
