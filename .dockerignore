@@ -1,0 +1,42 @@
+# Local development
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Secrets — NEVER bake into image (passed via -e at runtime)
+.env
+
+# Local artifacts (rebuilt or supplied via volume)
+logs/
+artifacts/
+mlruns/
+mlruns_old_filesystem_backup/
+mlflow.db
+monitoring/drift_report.html
+
+# Docs / dev-only assets
+notebooks/
+*.md
+LICENSE
+
+# CI
+.github/
+
+# Tests (we don't ship tests in the runtime image)
+tests/
