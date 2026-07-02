@@ -116,6 +116,7 @@ def main():
             sk_model=pipeline,
             artifact_path="model_pipeline",
             registered_model_name=REGISTERED_MODEL_NAME,
+            serialization_format="cloudpickle",
         )
 
         # Save a local .pkl too, for the API and Docker image to load
