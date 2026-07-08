@@ -144,9 +144,9 @@ finrisk-copilot/
 - [x] Synthetic explanation dataset generation
 - [x] LoRA fine-tuning of TinyLlama (Colab + Hugging Face Hub)
 - [x] LLM-backed explanation endpoint
-- [ ] RAG over banking policy PDFs
-- [ ] Evidently drift monitoring
-- [ ] Dockerized deployment + GitHub Actions CI
+- [x] RAG over banking policy PDFs
+- [x] Evidently drift monitoring
+- [x] Dockerized deployment + GitHub Actions CI
 - [ ] Model and data cards
 
 ---
