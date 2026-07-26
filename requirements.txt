@@ -28,4 +28,4 @@ accelerate==1.13.0
 python-multipart==0.0.29
 groq==1.4.0
 python-dotenv==1.2.2
-streamlit==<paste-version-here>
+streamlit==1.60.0
