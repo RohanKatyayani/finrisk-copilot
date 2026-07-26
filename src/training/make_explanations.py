@@ -21,7 +21,7 @@ def generate_explanation(row):
     if not reasons:
         reasons.append("stable financial profile")
 
-    label = "bad" if row["credit_risk"] == 1 else "good"
+    label = "good" if row["credit_risk"] == 1 else "bad"
     explanation = (
         f"Application {'denied' if label=='bad' else 'approved'} due to " + ", ".join(reasons) + "."
     )

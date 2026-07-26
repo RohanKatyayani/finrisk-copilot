@@ -12,7 +12,7 @@ if tok.pad_token is None:
     tok.pad_token = tok.eos_token
 model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.float32, low_cpu_mem_usage=True)
 model.eval()
-decision = "denied" if pred == 1 else "approved"
+decision = "approved" if pred == 1 else "denied"
 feat_str = ", ".join(f"{k}={v}" for k, v in feats.items())
 prompt = f"Explain the credit risk decision for the following applicant profile.\\nInput: {feat_str}\\nDecision: {decision}.\\nExplanation:"
 inputs = tok(prompt, return_tensors="pt", truncation=True, max_length=512)
@@ -39,5 +39,5 @@ def generate_explanation(features: dict, prediction: int, max_new_tokens: int = 
             raise RuntimeError("No JSON output from subprocess")
         return json.loads(output_line[-1])["explanation"]
     except subprocess.TimeoutExpired:
-        decision_word = "denied" if prediction == 1 else "approved"
+        decision_word = "approved" if prediction == 1 else "denied"
         return f"Application {decision_word} based on the provided financial profile."

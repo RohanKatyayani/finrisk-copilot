@@ -113,7 +113,7 @@ class PredictionRequest(BaseModel):
 
 class ExplainRequest(BaseModel):
     features: dict = Field(..., description="Same keys as /predict body")
-    prediction: int = Field(..., ge=0, le=1, description="0=good, 1=bad credit")
+    prediction: int = Field(..., ge=0, le=1, description="1=good, 0=bad credit")
 
 
 class AskPolicyRequest(BaseModel):

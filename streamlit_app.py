@@ -155,7 +155,7 @@ def application_form(prefix: str) -> dict:
 
 
 # Class 1 means "bad credit" per the /explain docstring — see note below.
-CLASS_LABELS = {0: "Good credit", 1: "Bad credit"}
+CLASS_LABELS = {0: "Bad credit", 1: "Good credit"}
 
 with tab_predict:
     st.subheader("Credit risk score")
