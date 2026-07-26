@@ -1,4 +1,5 @@
 import os
+
 import requests
 import streamlit as st
 
@@ -32,29 +33,67 @@ tab_predict, tab_explain, tab_combined, tab_policy = st.tabs(
 )
 
 # --- German Credit fields: human label -> dataset code ---
-STATUS = {"No checking account": "A14", "< 0 DM": "A11",
-          "0-200 DM": "A12", ">= 200 DM / salary assigned": "A13"}
-CREDIT_HISTORY = {"No credits / all paid duly": "A30", "All paid at this bank": "A31",
-                  "Existing credits paid duly": "A32", "Past delay in paying": "A33",
-                  "Critical account / other credits": "A34"}
-PURPOSE = {"Car (new)": "A40", "Car (used)": "A41", "Furniture/equipment": "A42",
-           "Radio/TV": "A43", "Domestic appliances": "A44", "Repairs": "A45",
-           "Education": "A46", "Retraining": "A48", "Business": "A49", "Other": "A410"}
-SAVINGS = {"< 100 DM": "A61", "100-500 DM": "A62", "500-1000 DM": "A63",
-           ">= 1000 DM": "A64", "Unknown / none": "A65"}
-EMPLOYMENT = {"Unemployed": "A71", "< 1 year": "A72", "1-4 years": "A73",
-              "4-7 years": "A74", ">= 7 years": "A75"}
-PERSONAL = {"Male: single": "A93", "Male: divorced/separated": "A91",
-            "Male: married/widowed": "A94", "Female: divorced/separated/married": "A92",
-            "Female: single": "A95"}
+STATUS = {
+    "No checking account": "A14",
+    "< 0 DM": "A11",
+    "0-200 DM": "A12",
+    ">= 200 DM / salary assigned": "A13",
+}
+CREDIT_HISTORY = {
+    "No credits / all paid duly": "A30",
+    "All paid at this bank": "A31",
+    "Existing credits paid duly": "A32",
+    "Past delay in paying": "A33",
+    "Critical account / other credits": "A34",
+}
+PURPOSE = {
+    "Car (new)": "A40",
+    "Car (used)": "A41",
+    "Furniture/equipment": "A42",
+    "Radio/TV": "A43",
+    "Domestic appliances": "A44",
+    "Repairs": "A45",
+    "Education": "A46",
+    "Retraining": "A48",
+    "Business": "A49",
+    "Other": "A410",
+}
+SAVINGS = {
+    "< 100 DM": "A61",
+    "100-500 DM": "A62",
+    "500-1000 DM": "A63",
+    ">= 1000 DM": "A64",
+    "Unknown / none": "A65",
+}
+EMPLOYMENT = {
+    "Unemployed": "A71",
+    "< 1 year": "A72",
+    "1-4 years": "A73",
+    "4-7 years": "A74",
+    ">= 7 years": "A75",
+}
+PERSONAL = {
+    "Male: single": "A93",
+    "Male: divorced/separated": "A91",
+    "Male: married/widowed": "A94",
+    "Female: divorced/separated/married": "A92",
+    "Female: single": "A95",
+}
 DEBTORS = {"None": "A101", "Co-applicant": "A102", "Guarantor": "A103"}
-PROPERTY = {"Real estate": "A121", "Life insurance / savings agreement": "A122",
-            "Car or other": "A123", "Unknown / none": "A124"}
+PROPERTY = {
+    "Real estate": "A121",
+    "Life insurance / savings agreement": "A122",
+    "Car or other": "A123",
+    "Unknown / none": "A124",
+}
 PLANS = {"None": "A143", "Bank": "A141", "Stores": "A142"}
 HOUSING = {"Own": "A152", "Rent": "A151", "For free": "A153"}
-JOB = {"Skilled employee / official": "A173", "Unskilled - resident": "A172",
-       "Unemployed / unskilled - non-resident": "A171",
-       "Management / self-employed / highly qualified": "A174"}
+JOB = {
+    "Skilled employee / official": "A173",
+    "Unskilled - resident": "A172",
+    "Unemployed / unskilled - non-resident": "A171",
+    "Management / self-employed / highly qualified": "A174",
+}
 TELEPHONE = {"Yes, registered": "A192", "None": "A191"}
 FOREIGN = {"Yes": "A201", "No": "A202"}
 
@@ -80,21 +119,38 @@ def application_form(prefix: str) -> dict:
         duration = st.number_input("Duration (months)", 1, 120, 24, key=f"{prefix}_dur")
         amount = st.number_input("Credit amount (DM)", 1, 100000, 3500, key=f"{prefix}_amt")
         age = st.number_input("Age", 18, 100, 30, key=f"{prefix}_age")
-        installment_rate = st.slider("Installment rate (% of income)", 1, 4, 2, key=f"{prefix}_rate")
-        residence = st.number_input("Present residence since (years)", 1, 10, 2, key=f"{prefix}_res")
-        n_credits = st.number_input("Existing credits at this bank", 1, 10, 1, key=f"{prefix}_ncred")
+        installment_rate = st.slider(
+            "Installment rate (% of income)", 1, 4, 2, key=f"{prefix}_rate"
+        )
+        residence = st.number_input(
+            "Present residence since (years)", 1, 10, 2, key=f"{prefix}_res"
+        )
+        n_credits = st.number_input(
+            "Existing credits at this bank", 1, 10, 1, key=f"{prefix}_ncred"
+        )
         liable = st.number_input("People liable to maintain", 1, 10, 1, key=f"{prefix}_liable")
 
     return {
-        "status": STATUS[status], "duration": duration,
-        "credit_history": CREDIT_HISTORY[credit_history], "purpose": PURPOSE[purpose],
-        "amount": amount, "savings": SAVINGS[savings],
-        "employment_duration": EMPLOYMENT[employment], "installment_rate": installment_rate,
-        "personal_status_sex": PERSONAL[personal], "other_debtors": DEBTORS[debtors],
-        "present_residence": residence, "property": PROPERTY[prop], "age": age,
-        "other_installment_plans": PLANS[plans], "housing": HOUSING[housing],
-        "number_credits": n_credits, "job": JOB[job], "people_liable": liable,
-        "telephone": TELEPHONE[telephone], "foreign_worker": FOREIGN[foreign],
+        "status": STATUS[status],
+        "duration": duration,
+        "credit_history": CREDIT_HISTORY[credit_history],
+        "purpose": PURPOSE[purpose],
+        "amount": amount,
+        "savings": SAVINGS[savings],
+        "employment_duration": EMPLOYMENT[employment],
+        "installment_rate": installment_rate,
+        "personal_status_sex": PERSONAL[personal],
+        "other_debtors": DEBTORS[debtors],
+        "present_residence": residence,
+        "property": PROPERTY[prop],
+        "age": age,
+        "other_installment_plans": PLANS[plans],
+        "housing": HOUSING[housing],
+        "number_credits": n_credits,
+        "job": JOB[job],
+        "people_liable": liable,
+        "telephone": TELEPHONE[telephone],
+        "foreign_worker": FOREIGN[foreign],
     }
 
 
