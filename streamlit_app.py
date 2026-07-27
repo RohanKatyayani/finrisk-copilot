@@ -174,7 +174,37 @@ with tab_predict:
         except Exception as e:
             st.error(f"Request failed: {e}")
 with tab_explain:
-    st.info("Explain tab — coming soon.")
+    st.subheader("Explanation only")
+    st.caption(
+        "Calls `/explain` directly. You choose the decision, the fine-tuned LLM writes "
+        "the reasoning — useful for comparing how the same profile is justified either way."
+    )
+    features = application_form("exp")
+    decision = st.radio(
+        "Decision to explain",
+        options=[1, 0],
+        format_func=lambda v: CLASS_LABELS[v],
+        horizontal=True,
+        key="exp_decision",
+    )
+    if st.button("Generate explanation", key="exp_btn", type="primary"):
+        try:
+            with st.spinner("Generating explanation..."):
+                r = requests.post(
+                    f"{API_URL}/explain",
+                    json={"features": features, "prediction": decision},
+                    timeout=600,
+                )
+            r.raise_for_status()
+            data = r.json()
+            st.markdown(f"**Explanation for: {CLASS_LABELS[decision]}**")
+            st.info(data.get("explanation", "(no explanation returned)"))
+            with st.expander("Raw response"):
+                st.json(data)
+        except requests.exceptions.Timeout:
+            st.error("Timed out — the model may still be loading. Try again shortly.")
+        except Exception as e:
+            st.error(f"Request failed: {e}")
 with tab_combined:
     st.subheader("Score + explanation")
     st.caption(
@@ -185,9 +215,7 @@ with tab_combined:
     if st.button("Score and explain", key="comb_btn", type="primary"):
         try:
             with st.spinner("Scoring, then generating explanation..."):
-                r = requests.post(
-                    f"{API_URL}/predict_and_explain", json=features, timeout=600
-                )
+                r = requests.post(f"{API_URL}/predict_and_explain", json=features, timeout=600)
             r.raise_for_status()
             data = r.json()
             pred, proba = data["prediction"], data["probabilities"]
