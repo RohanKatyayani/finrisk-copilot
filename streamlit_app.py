@@ -176,6 +176,34 @@ with tab_predict:
 with tab_explain:
     st.info("Explain tab — coming soon.")
 with tab_combined:
-    st.info("Combined tab — coming soon.")
+    st.subheader("Score + explanation")
+    st.caption(
+        "Calls `/predict_and_explain`. The LLM runs on CPU, so expect ~10–40s. "
+        "The first ever call also downloads the model weights and may take several minutes."
+    )
+    features = application_form("comb")
+    if st.button("Score and explain", key="comb_btn", type="primary"):
+        try:
+            with st.spinner("Scoring, then generating explanation..."):
+                r = requests.post(
+                    f"{API_URL}/predict_and_explain", json=features, timeout=600
+                )
+            r.raise_for_status()
+            data = r.json()
+            pred, proba = data["prediction"], data["probabilities"]
+
+            c1, c2 = st.columns(2)
+            c1.metric("Decision", CLASS_LABELS.get(pred, pred))
+            c2.metric("Confidence", f"{max(proba):.1%}")
+
+            st.markdown("**Explanation**")
+            st.info(data.get("explanation", "(no explanation returned)"))
+
+            with st.expander("Raw response"):
+                st.json(data)
+        except requests.exceptions.Timeout:
+            st.error("Timed out. The model may still be downloading — try again shortly.")
+        except Exception as e:
+            st.error(f"Request failed: {e}")
 with tab_policy:
     st.info("Ask Policy tab — coming soon.")
