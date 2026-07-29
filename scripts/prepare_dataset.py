@@ -5,6 +5,7 @@ import os
 input_path = "data/explanations/german_credit_explanations.jsonl"
 output_path = "data/credit_instructions.jsonl"
 
+
 def convert_to_instruction_format(input_path, output_path):
     """Convert credit explanation dataset into Alpaca-style instruction format."""
     samples = []
@@ -16,11 +17,7 @@ def convert_to_instruction_format(input_path, output_path):
             input_text = record["input"]
             output_text = f"Decision: {record['label']}. Explanation: {record['explanation']}"
 
-            samples.append({
-                "instruction": instruction,
-                "input": input_text,
-                "output": output_text
-            })
+            samples.append({"instruction": instruction, "input": input_text, "output": output_text})
 
     # Save new dataset
     with open(output_path, "w") as f:

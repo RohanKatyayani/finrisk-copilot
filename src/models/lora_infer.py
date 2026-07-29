@@ -1,4 +1,5 @@
 import json, subprocess, sys, logging
+
 logger = logging.getLogger(__name__)
 
 _INFER_SCRIPT = """
@@ -25,12 +26,17 @@ if not explanation or len(explanation) < 10:
 print(json.dumps({"explanation": explanation}))
 """
 
+
 def generate_explanation(features: dict, prediction: int, max_new_tokens: int = 120) -> str:
-    payload = json.dumps({"features": features, "prediction": prediction, "max_new_tokens": max_new_tokens})
+    payload = json.dumps(
+        {"features": features, "prediction": prediction, "max_new_tokens": max_new_tokens}
+    )
     try:
         result = subprocess.run(
             [sys.executable, "-c", _INFER_SCRIPT, payload],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
         if result.returncode != 0:
             raise RuntimeError(f"Subprocess failed: {result.stderr[-200:]}")
