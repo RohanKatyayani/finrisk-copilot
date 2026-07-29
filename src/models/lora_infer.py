@@ -1,4 +1,7 @@
-import json, subprocess, sys, logging
+import json
+import logging
+import subprocess
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +43,7 @@ def generate_explanation(features: dict, prediction: int, max_new_tokens: int = 
         )
         if result.returncode != 0:
             raise RuntimeError(f"Subprocess failed: {result.stderr[-200:]}")
-        output_line = [l for l in result.stdout.strip().splitlines() if l.startswith("{")]
+        output_line = [line for line in result.stdout.strip().splitlines() if line.startswith("{")]
         if not output_line:
             raise RuntimeError("No JSON output from subprocess")
         return json.loads(output_line[-1])["explanation"]

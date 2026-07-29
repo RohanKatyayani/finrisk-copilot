@@ -15,8 +15,6 @@ extend-exclude = [
     ".venv",
     "build",
     "dist",
-    "data",
-    "models",
     "mlruns",
     "artifacts",
     "monitoring/drift_report.html",
@@ -42,7 +40,7 @@ ignore = [
 line-length = 100
 target-version = ["py311"]
 # Don't touch notebooks (we'd need black[jupyter] anyway, and we keep notebooks as-is).
-extend-exclude = "notebooks|\\.venv|data|models|mlruns"
+extend-exclude = "^/(notebooks|\\.venv|mlruns|build|dist)/"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
