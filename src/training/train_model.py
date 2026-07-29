@@ -87,7 +87,7 @@ def main():
         n_estimators=200,
         subsample=1.0,
         colsample_bytree=0.8,
-        scale_pos_weight=2,
+        scale_pos_weight=240 / 560,  # balance toward the minority (bad credit) class
         random_state=RANDOM_STATE,
         n_jobs=-1,
     )
@@ -127,7 +127,7 @@ def main():
         joblib.dump(pipeline, "models/credit_risk_model.pkl")
 
         run_id = run.info.run_id
-        print(f"\n📊 Metrics — accuracy: {acc:.3f}")
+        print(f"\n📊 Metrics — accuracy: {acc:.3f} | ROC-AUC: {auc:.3f}")
         print(f"📌 MLflow run ID: {run_id}")
         print(f"🏷️  Registered model: {REGISTERED_MODEL_NAME} (check Registry for version)")
         print("💾 Local pickle:  models/credit_risk_model.pkl")
