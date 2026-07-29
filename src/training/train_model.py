@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier
 from sklearn.compose import ColumnTransformer
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -102,9 +102,12 @@ def main():
 
         y_pred = pipeline.predict(X_test)
         acc = accuracy_score(y_test, y_pred)
+        y_proba = pipeline.predict_proba(X_test)[:, 1]
+        auc = roc_auc_score(y_test, y_proba)
         report = classification_report(y_test, y_pred, output_dict=True)
 
         mlflow.log_metric("accuracy", float(acc))
+        mlflow.log_metric("roc_auc", float(auc))
         for cls in ("0", "1"):
             if cls in report:
                 mlflow.log_metric(f"precision_class_{cls}", float(report[cls]["precision"]))
